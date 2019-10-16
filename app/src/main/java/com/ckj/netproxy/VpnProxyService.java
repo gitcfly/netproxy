@@ -20,8 +20,8 @@ public class VpnProxyService extends VpnService {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         try {
-            new VpnServer().start();
-            Thread.sleep(1000);
+            new VpnServer(this).start();
+            Thread.sleep(3000);
             new VpnClient(this,builder).start();
         }catch (Exception e){
             e.printStackTrace();

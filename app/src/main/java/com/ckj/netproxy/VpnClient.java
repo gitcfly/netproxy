@@ -8,6 +8,7 @@ import java.io.FileOutputStream;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
+import java.nio.channels.SocketChannel;
 
 public class VpnClient extends Thread {
     int MAX_PACKET_SIZE=Short.MAX_VALUE;
@@ -25,7 +26,7 @@ public class VpnClient extends Thread {
         try {
             //a. Configure the TUN and get the interface.
             mInterface = builder.setSession("MyVPNService")
-                    .addAddress("192.168.1.1", 0)
+                    .addAddress("10.0.2.0", 24)
                     .addRoute("0.0.0.0", 0).establish();
             //b. Packets to be sent are queued in this input stream.
             FileInputStream in = new FileInputStream(
@@ -34,7 +35,7 @@ public class VpnClient extends Thread {
             FileOutputStream out = new FileOutputStream(
                     mInterface.getFileDescriptor());
             //c. The UDP channel can be used to pass/get ip package to/from server
-            DatagramChannel tunnel = DatagramChannel.open();
+            SocketChannel tunnel = SocketChannel.open();
             // Connect to the server, localhost is used for demonstration only.
             tunnel.connect(new InetSocketAddress("127.0.0.1", 65080));
             //d. Protect this socket, so package send by it will not be feedback to the vpn service.

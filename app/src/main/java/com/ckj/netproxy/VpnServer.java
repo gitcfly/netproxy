@@ -2,32 +2,44 @@ package com.ckj.netproxy;
 
 import android.net.VpnService;
 
+import org.greenrobot.eventbus.EventBus;
+
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 
 public class VpnServer extends Thread{
+    EventBus eventBus;
     VpnService mVpnService;
-    DatagramChannel serChannel;
+    ServerSocketChannel serChannel;
     int MAX_PACKET_SIZE=Short.MAX_VALUE;
     String response="hello client,i am server !";
-    ByteBuffer resppacke=ByteBuffer.wrap(response.getBytes());
+    ByteBuffer resppacke;
+    public VpnServer(VpnService service){
+        eventBus=EventBus.getDefault();
+        this.mVpnService=service;
+        this.resppacke=ByteBuffer.wrap(response.getBytes());
+    }
+
     @Override
     public void run() {
         try {
-            serChannel=DatagramChannel.open();
+            serChannel=ServerSocketChannel.open();
             serChannel.socket().bind(new InetSocketAddress(65080));
-            mVpnService.protect(serChannel.socket());
+            mVpnService.protect(65080);
             ByteBuffer packet = ByteBuffer.allocate(MAX_PACKET_SIZE);
+            SocketChannel channel=serChannel.accept();
             while (true) {
                 try{
-                    int length = serChannel.read(packet);
-                    String msg=new String(packet.array(),0,length);
+                    int length = channel.read(packet);
+                    String msg=new String(packet.array(),0,length,"utf-8");
+                    eventBus.post(msg);
                     System.out.println(msg);
                     if (length > 0) {
-                        // Write the outgoing packet to the tunnel.
                         packet.limit(length);
-                        serChannel.write(resppacke);
+                        channel.write(resppacke);
                         packet.clear();
                     }
                 }catch (Exception e){
@@ -37,6 +49,5 @@ public class VpnServer extends Thread{
         }catch (Exception e){
             e.printStackTrace();
         }
-
     }
 }
