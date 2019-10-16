@@ -30,7 +30,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 Intent intent = VpnService.prepare(getApplicationContext());
                 if (intent != null) {
-                    startActivityForResult(intent, 0);
+                    System.out.println("已经开启了");
                 } else {
                     onActivityResult(0, RESULT_OK, null);
                 }

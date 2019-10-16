@@ -5,7 +5,10 @@ import android.os.ParcelFileDescriptor;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SocketChannel;
@@ -35,25 +38,26 @@ public class VpnClient extends Thread {
             FileOutputStream out = new FileOutputStream(
                     mInterface.getFileDescriptor());
             //c. The UDP channel can be used to pass/get ip package to/from server
-            SocketChannel tunnel = SocketChannel.open();
-            // Connect to the server, localhost is used for demonstration only.
-            tunnel.connect(new InetSocketAddress("127.0.0.1", 65080));
+            Socket tunnel = new Socket("47.102.199.92",65080);
+            mVpnService.protect(tunnel);
+            OutputStream serOut=tunnel.getOutputStream();
+            InputStream serIn=tunnel.getInputStream();
             //d. Protect this socket, so package send by it will not be feedback to the vpn service.
-            mVpnService.protect(tunnel.socket());
-            ByteBuffer packet = ByteBuffer.allocate(MAX_PACKET_SIZE);
+            byte[] packet = new byte[MAX_PACKET_SIZE];
             //e. Use a loop to pass packets.
             while (true) {
                 try {
-                    int length = in.read(packet.array());
+                    int length = in.read(packet);
                     if (length > 0) {
-                        packet.limit(length);
-                        tunnel.write(packet);
-                        packet.clear();
+                        String msg=new String(packet,0,length,"utf-8");
+                        System.out.println(msg);
+                        serOut.write(packet,0,length);
+                        serOut.flush();
                     }
-                    length = tunnel.read(packet);
+                    length = serIn.read(packet);
                     if (length > 0) {
-                        out.write(packet.array(), 0, length);
-                        packet.clear();
+                        out.write(packet, 0, length);
+                        out.flush();
                     }
                 }catch (Exception e){
                     e.printStackTrace();

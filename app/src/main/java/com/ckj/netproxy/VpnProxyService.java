@@ -8,6 +8,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.net.InetSocketAddress;
 import java.nio.channels.DatagramChannel;
+import java.util.concurrent.CountDownLatch;
 
 public class VpnProxyService extends VpnService {
 
@@ -20,8 +21,10 @@ public class VpnProxyService extends VpnService {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         try {
-            new VpnServer(this).start();
-            Thread.sleep(3000);
+            CountDownLatch latch=new CountDownLatch(1);
+            new VpnServer(this,latch).start();
+            latch.await();
+            Thread.sleep(1000);
             new VpnClient(this,builder).start();
         }catch (Exception e){
             e.printStackTrace();
