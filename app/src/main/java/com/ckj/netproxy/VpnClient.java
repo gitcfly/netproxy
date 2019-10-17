@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SocketChannel;
@@ -28,39 +29,37 @@ public class VpnClient extends Thread {
     public void run() {
         try {
             //a. Configure the TUN and get the interface.
-            mInterface = builder.setSession("MyVPNService")
-                    .addAddress("10.0.2.0", 24)
-                    .addRoute("0.0.0.0", 0).establish();
-            //b. Packets to be sent are queued in this input stream.
-            FileInputStream in = new FileInputStream(
-                    mInterface.getFileDescriptor());
-            //b. Packets received need to be written to this output stream.
-            FileOutputStream out = new FileOutputStream(
-                    mInterface.getFileDescriptor());
-            //c. The UDP channel can be used to pass/get ip package to/from server
-            Socket tunnel = new Socket("47.102.199.92",65080);
-            mVpnService.protect(tunnel);
-            OutputStream serOut=tunnel.getOutputStream();
-            InputStream serIn=tunnel.getInputStream();
-            //d. Protect this socket, so package send by it will not be feedback to the vpn service.
+            mInterface = builder.setSession("MyVPNService").addAddress("10.0.2.0", 24).addRoute("0.0.0.0", 0).establish();
+            FileInputStream in = new FileInputStream(mInterface.getFileDescriptor());
+            FileOutputStream out = new FileOutputStream(mInterface.getFileDescriptor());
             byte[] packet = new byte[MAX_PACKET_SIZE];
-            //e. Use a loop to pass packets.
-            while (true) {
-                try {
-                    int length = in.read(packet);
-                    if (length > 0) {
-                        String msg=new String(packet,0,length,"utf-8");
-                        System.out.println(msg);
-                        serOut.write(packet,0,length);
-                        serOut.flush();
+            while (true){
+                Socket tunnel = new Socket("127.0.0.1",65080);
+                mVpnService.protect(tunnel);
+                OutputStream serOut=tunnel.getOutputStream();
+                InputStream serIn=tunnel.getInputStream();
+                while (true) {
+                    try {
+                        int length = in.read(packet);
+                        if (length > 0) {
+                            String msg=new String(packet,0,length,"utf-8");
+                            System.out.println(msg);
+                            serOut.write(packet,0,length);
+                            serOut.flush();
+                        }
+                        length = serIn.read(packet);
+                        if (length > 0) {
+                            String msg=new String(packet,0,length,"utf-8");
+                            out.write(msg.getBytes());
+                            out.flush();
+                            System.out.println("get msg from servser :"+msg);
+                        }
+                    } catch (SocketException e){
+                        e.printStackTrace();
+                        break;
+                    } catch(Exception e){
+                        e.printStackTrace();
                     }
-                    length = serIn.read(packet);
-                    if (length > 0) {
-                        out.write(packet, 0, length);
-                        out.flush();
-                    }
-                }catch (Exception e){
-                    e.printStackTrace();
                 }
             }
         } catch (Exception e) {

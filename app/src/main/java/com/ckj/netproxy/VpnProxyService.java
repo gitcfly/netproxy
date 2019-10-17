@@ -12,32 +12,21 @@ import java.util.concurrent.CountDownLatch;
 
 public class VpnProxyService extends VpnService {
 
-    private Thread mThread;
     private ParcelFileDescriptor mInterface;
-    //a. Configure a builder for the interface.
     Builder builder = new Builder();
 
-    // Services interface
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         try {
             CountDownLatch latch=new CountDownLatch(1);
-            new VpnServer(this,latch).start();
+            new VpnServer(VpnProxyService.this,latch).start();
             latch.await();
             Thread.sleep(1000);
-            new VpnClient(this,builder).start();
+            new VpnClient(VpnProxyService.this,builder).start();
         }catch (Exception e){
             e.printStackTrace();
         }
         return START_STICKY;
     }
 
-    @Override
-    public void onDestroy() {
-        // TODO Auto-generated method stub
-        if (mThread != null) {
-            mThread.interrupt();
-        }
-        super.onDestroy();
-    }
 }

@@ -6,13 +6,10 @@ import org.greenrobot.eventbus.EventBus;
 
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
-import java.nio.channels.DatagramChannel;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 
 public class VpnServer extends Thread{
@@ -34,25 +31,34 @@ public class VpnServer extends Thread{
     public void run() {
         try {
             serChannel=new ServerSocket(65080);
-            mVpnService.protect(65080);
             byte[] packet=new byte[MAX_PACKET_SIZE];
             latch.countDown();
-            Socket channel=serChannel.accept();
-            InputStream in=channel.getInputStream();
-            OutputStream out=channel.getOutputStream();
-            while (true) {
-                try{
-                    int length = in.read(packet);
-                    String msg=new String(packet,0,length,"utf-8");
-                    eventBus.post(msg);
-                    System.out.println(msg);
-                    if (length > 0) {
-                        out.write(response.getBytes());
-                        out.flush();
+            try{
+                while (true){
+                    Socket channel=serChannel.accept();
+                    mVpnService.protect(channel);
+                    InputStream in=channel.getInputStream();
+                    OutputStream out=channel.getOutputStream();
+                    while (true) {
+                        try{
+                            int length = in.read(packet);
+                            String msg=new String(packet,0,length,"utf-8");
+                            eventBus.post(msg);
+                            System.out.println(msg);
+                            if (length > 0) {
+                                out.write(response.getBytes());
+                                out.flush();
+                            }
+                        }catch (SocketException e){
+                            e.printStackTrace();
+                            break;
+                        }catch (Exception e){
+                            e.printStackTrace();
+                        }
                     }
-                }catch (Exception e){
-                    e.printStackTrace();
                 }
+            }catch (Exception e){
+                e.printStackTrace();
             }
         }catch (Exception e){
             e.printStackTrace();
