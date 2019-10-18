@@ -9,6 +9,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import org.greenrobot.eventbus.EventBus;
@@ -19,12 +21,25 @@ public class MainActivity extends AppCompatActivity {
 
     TextView net_text;
 
+    EditText search_text;
+
+    Button search;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         EventBus.getDefault().register(this);
         net_text=findViewById(R.id.net_text);
+        search=findViewById(R.id.search);
+        search_text=findViewById(R.id.search_text);
+        search.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                net_text.setText("");
+                Config.logprex=search_text.getText().toString();
+            }
+        });
         findViewById(R.id.open_proxy).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

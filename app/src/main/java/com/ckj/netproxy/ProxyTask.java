@@ -12,6 +12,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.nio.channels.DatagramChannel;
 
 public class ProxyTask implements Runnable {
     VpnService vpnService;
@@ -33,11 +34,13 @@ public class ProxyTask implements Runnable {
             if(ipPacket.protocol== NetProtocol.Tcp.getProtocol()){
                 TcpPacket tcpPacket=new TcpPacket(ipPacket);
                 String requstStr=new String(tcpPacket.data,"utf-8");
-                EventBus.getDefault().post("requst:\n"+requstStr+"\n");
+                Event.sendEvent("requst:\n"+requstStr+"\n");
                 Socket socket= new Socket();
                 try {
+                    Event.sendEvent("try connect to "+tcpPacket.desHost+":"+tcpPacket.desPort+"\n");
+//                    socket.connect(new InetSocketAddress(tcpPacket.desHost,tcpPacket.desPort), 2000);
+                    socket.connect(new InetSocketAddress("47.102.199.92",65081), 2000);
                     vpnService.protect(socket);
-                    socket.connect(new InetSocketAddress(tcpPacket.desHost,tcpPacket.desPort), 2000);
                     socket.setSoTimeout(5000);
                     OutputStream netOut=socket.getOutputStream();
                     netOut.write(tcpPacket.data);
@@ -48,18 +51,20 @@ public class ProxyTask implements Runnable {
                     output.flush();
                     socket.close();
                     String responseStr=new String(response,0,netLength,"utf-8");
-                    EventBus.getDefault().post("response:\n"+responseStr+"\n\n");
+                    Event.sendEvent("response:\n"+responseStr+"\n\n");
                 }catch (Exception e){
                     e.printStackTrace();
                     socket.close();
+                    Event.sendEvent(e.getMessage());
                 }
             }else {
                 output.write("no support prototol ! ".getBytes());
                 output.flush();
-                EventBus.getDefault().post("no suport prototol !:\n\n");
+                Event.sendEvent("no suport prototol !:\n\n");
             }
         }catch (Exception e){
             e.printStackTrace();
+            Event.sendEvent(e.getMessage()+"\n\n");
         }
     }
 }

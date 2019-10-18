@@ -39,20 +39,38 @@ public class VpnClient extends Thread {
     @Override
     public void run() {
         try {
-            mInterface = builder.setSession("MyVPNService").addAddress("10.0.2.0", 24).addRoute("0.0.0.0", 0).establish();
+            Socket socket= new Socket();
+            socket.connect(new InetSocketAddress("10.92.239.198",65081), 2000);
+            socket.setSoTimeout(5000);
+            OutputStream netOut=socket.getOutputStream();
+            byte[] packet = new byte[MAX_PACKET_SIZE];
+            DatagramChannel channel=DatagramChannel.open();
+            channel.connect(new InetSocketAddress("10.92.239.198",65082));
+            mInterface = builder.setSession("MyVPNService")
+                    .addAddress("192.168.0.1", 24)
+                    .addRoute("0.0.0.0", 0)
+                    .establish();
             FileInputStream in = new FileInputStream(mInterface.getFileDescriptor());
             FileOutputStream out = new FileOutputStream(mInterface.getFileDescriptor());
-            byte[] packet = new byte[MAX_PACKET_SIZE];
+            mVpnService.protect(socket);
+            ByteBuffer byteBuffer=ByteBuffer.allocate(1203);
+            byteBuffer.put("hello server!".getBytes("utf-8"));
+            mVpnService.protect(channel.socket());
             while (true){
                 try {
                     int length = in.read(packet);
                     if (length > 0) {
-                        byte[] data=Tools.copyBytes(packet,0,length);
-                        ProxyTask task=new ProxyTask(mVpnService,out,data,length);
-                        executor.execute(task);
+                        System.out.println("read from victical net:\n"+new String(packet,0,length,"utf-8"));
+                        netOut.write(byteBuffer);
+//                        byte[] data=Tools.copyBytes(packet,0,length);
+//                        ProxyTask task=new ProxyTask(mVpnService,out,data,length);
+//                        executor.execute(task);
+//                        netOut.write("sdfsfsfadfsf".getBytes());
+//                        netOut.flush();
                     }
                 } catch (SocketException e){
                     e.printStackTrace();
+                    Event.sendEvent(e.getMessage());
                     break;
                 } catch(Exception e){
                     e.printStackTrace();
@@ -60,6 +78,7 @@ public class VpnClient extends Thread {
             }
         } catch (Exception e) {
             e.printStackTrace();
+            Event.sendEvent(e.getMessage());
         } finally {
             try {
                 if (mInterface != null) {
@@ -68,6 +87,7 @@ public class VpnClient extends Thread {
                 }
             } catch (Exception e) {
                 e.printStackTrace();
+                Event.sendEvent(e.getMessage());
             }
             System.out.println("退出VPN模式");
         }
