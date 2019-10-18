@@ -11,6 +11,8 @@
         android:textSize="15sp"
         android:id="@+id/net_text"
         android:layout_weight="1"
+        android:scrollbars="vertical"
+        android:textIsSelectable="true"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
     <Button

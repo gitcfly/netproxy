@@ -18,10 +18,6 @@ public class VpnProxyService extends VpnService {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         try {
-            CountDownLatch latch=new CountDownLatch(1);
-            new VpnServer(VpnProxyService.this,latch).start();
-            latch.await();
-            Thread.sleep(1000);
             new VpnClient(VpnProxyService.this,builder).start();
         }catch (Exception e){
             e.printStackTrace();

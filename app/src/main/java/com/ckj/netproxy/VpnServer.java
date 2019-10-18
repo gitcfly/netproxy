@@ -16,7 +16,7 @@ public class VpnServer extends Thread{
     EventBus eventBus;
     VpnService mVpnService;
     ServerSocket serChannel;
-    int MAX_PACKET_SIZE=Short.MAX_VALUE;
+    int MAX_PACKET_SIZE=65535;
     String response="hello client,i am server !";
     ByteBuffer resppacke;
     CountDownLatch latch;
